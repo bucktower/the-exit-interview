@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useKeyboardControls } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -21,9 +21,12 @@ export function Player({ position, walls, onReachExit, exitPosition }: PlayerPro
   const meshRef = useRef<THREE.Mesh>(null);
   const velocityRef = useRef(new THREE.Vector3());
   const [, getState] = useKeyboardControls<Controls>();
+  const { camera } = useThree();
   
   const SPEED = 5;
+  const ACCELERATION = 14;
   const PLAYER_RADIUS = 0.4;
+  const EYE_HEIGHT = 1.6;
 
   useEffect(() => {
     if (meshRef.current) {
@@ -52,27 +55,39 @@ export function Player({ position, walls, onReachExit, exitPosition }: PlayerPro
     if (!meshRef.current) return;
 
     const controls = getState();
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    forward.y = 0;
+    if (forward.lengthSq() > 0) {
+      forward.normalize();
+    } else {
+      forward.set(0, 0, -1);
+    }
+    const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
     const direction = new THREE.Vector3();
 
-    if (controls.forward) direction.z -= 1;
-    if (controls.back) direction.z += 1;
-    if (controls.left) direction.x -= 1;
-    if (controls.right) direction.x += 1;
+    if (controls.forward) direction.add(forward);
+    if (controls.back) direction.sub(forward);
+    if (controls.left) direction.sub(right);
+    if (controls.right) direction.add(right);
 
     if (direction.length() > 0) {
       direction.normalize();
-      velocityRef.current.copy(direction).multiplyScalar(SPEED * delta);
+    }
 
-      const currentPos = meshRef.current.position;
-      const newX = currentPos.x + velocityRef.current.x;
-      const newZ = currentPos.z + velocityRef.current.z;
+    const desiredVelocity = direction.multiplyScalar(SPEED);
+    const damping = 1 - Math.exp(-ACCELERATION * delta);
+    velocityRef.current.lerp(desiredVelocity, damping);
 
-      if (!checkCollision(newX, currentPos.z)) {
-        currentPos.x = newX;
-      }
-      if (!checkCollision(currentPos.x, newZ)) {
-        currentPos.z = newZ;
-      }
+    const currentPos = meshRef.current.position;
+    const newX = currentPos.x + velocityRef.current.x * delta;
+    const newZ = currentPos.z + velocityRef.current.z * delta;
+
+    if (!checkCollision(newX, currentPos.z)) {
+      currentPos.x = newX;
+    }
+    if (!checkCollision(currentPos.x, newZ)) {
+      currentPos.z = newZ;
     }
 
     const playerPos = meshRef.current.position;
@@ -85,16 +100,15 @@ export function Player({ position, walls, onReachExit, exitPosition }: PlayerPro
       onReachExit();
     }
 
-    state.camera.position.set(
+    camera.position.set(
       playerPos.x,
-      playerPos.y + 8,
-      playerPos.z + 6
+      playerPos.y + EYE_HEIGHT,
+      playerPos.z
     );
-    state.camera.lookAt(playerPos.x, playerPos.y, playerPos.z);
   });
 
   return (
-    <mesh ref={meshRef} position={position} castShadow>
+    <mesh ref={meshRef} position={position} castShadow visible={false}>
       <capsuleGeometry args={[0.3, 0.6, 8, 16]} />
       <meshStandardMaterial color="#4287f5" />
     </mesh>

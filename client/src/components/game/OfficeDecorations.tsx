@@ -84,7 +84,11 @@ function Plant({ position }: { position: [number, number, number] }) {
   );
 }
 
-export function OfficeDecorations() {
+interface OfficeDecorationsProps {
+  scale?: number;
+}
+
+export function OfficeDecorations({ scale = 1 }: OfficeDecorationsProps) {
   const decorations = useMemo(() => {
     return {
       desks: [
@@ -121,19 +125,22 @@ export function OfficeDecorations() {
     };
   }, []);
 
+  const scalePosition = (pos: [number, number, number]) =>
+    [pos[0] * scale, pos[1] * scale, pos[2] * scale] as [number, number, number];
+
   return (
     <group>
       {decorations.desks.map((desk, i) => (
-        <Desk key={`desk-${i}`} position={desk.position} rotation={desk.rotation} />
+        <Desk key={`desk-${i}`} position={scalePosition(desk.position)} rotation={desk.rotation} />
       ))}
       {decorations.chairs.map((chair, i) => (
-        <Chair key={`chair-${i}`} position={chair.position} rotation={chair.rotation} />
+        <Chair key={`chair-${i}`} position={scalePosition(chair.position)} rotation={chair.rotation} />
       ))}
       {decorations.waterCoolers.map((pos, i) => (
-        <WaterCooler key={`cooler-${i}`} position={pos} />
+        <WaterCooler key={`cooler-${i}`} position={scalePosition(pos)} />
       ))}
       {decorations.plants.map((pos, i) => (
-        <Plant key={`plant-${i}`} position={pos} />
+        <Plant key={`plant-${i}`} position={scalePosition(pos)} />
       ))}
     </group>
   );
