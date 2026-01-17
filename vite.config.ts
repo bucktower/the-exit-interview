@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig({
-  base: "/the-exit-interview/",
+  base: "/",
   plugins: [
     react(),
     runtimeErrorOverlay(),
@@ -18,12 +18,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "client", "src"),
-      "@shared": path.resolve(__dirname, "shared"),
     },
   },
   root: path.resolve(__dirname, "client"),
   build: {
-    outDir: path.resolve(__dirname, "docs"),
+    outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
   },
   // Add support for large models and audio files
