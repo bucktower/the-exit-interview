@@ -36,7 +36,12 @@ export const useGame = create<GameState>()(
     },
     
     restart: () => {
-      set(() => ({ phase: "ready", result: null, level: 0 }));
+      set((state) => {
+        if (state.result === "lose") {
+          return { phase: "ready", result: null, level: state.level, difficulty: state.difficulty };
+        }
+        return { phase: "ready", result: null, level: 0, difficulty: 0 };
+      });
     },
     
     end: (result) => {

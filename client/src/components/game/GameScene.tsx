@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useCallback } from "react";
+import { Suspense, useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { KeyboardControls } from "@react-three/drei";
 import { Player, Controls } from "./Player";
@@ -11,6 +11,9 @@ import { GameUI } from "./GameUI";
 import { useGame } from "@/lib/stores/useGame";
 import { MouseLookControls } from "./MouseLookControls";
 import { Coworkers } from "./Coworkers";
+import { TouchControls } from "./TouchControls";
+import * as THREE from "three";
+import type { MutableRefObject } from "react";
 
 const keyMap = [
   { name: Controls.forward, keys: ["ArrowUp", "KeyW"] },
@@ -39,7 +42,7 @@ function Lights() {
   );
 }
 
-function GameContent() {
+function GameContent({ touchMoveRef }: { touchMoveRef: MutableRefObject<THREE.Vector2> }) {
   const { phase, end, level, advanceLevel } = useGame();
   const difficulty = useGame((state) => state.difficulty);
   const TILE_SIZE = 30;
@@ -126,6 +129,7 @@ function GameContent() {
         coworkerCount={coworkerCount}
         coworkerSeed={coworkerSeed}
         level={level}
+        touchMoveRef={touchMoveRef}
       />
       <ExitDoor position={exitPosition} />
       <OfficeDecorations />
@@ -136,8 +140,54 @@ function GameContent() {
 }
 
 export function GameScene() {
-  const { phase, result, difficulty, start, restart } = useGame();
+  const { phase, result, difficulty, level, start, restart } = useGame();
   const blurPx = Math.min(difficulty, 8) * 0.8;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const touchMoveRef = useRef(new THREE.Vector2());
+  const touchLookRef = useRef(new THREE.Vector2());
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(true);
+
+  useEffect(() => {
+    const update = () => {
+      const pointerCoarse =
+        window.matchMedia?.("(pointer: coarse)").matches ?? false;
+      setIsTouchDevice(pointerCoarse);
+      setIsLandscape(window.innerWidth >= window.innerHeight);
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      const audio = new Audio("/Edm_116.m4a");
+      audio.loop = true;
+      audio.volume = 0.4;
+      audioRef.current = audio;
+    }
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const audio = audioRef.current;
+    if (!audio) return;
+    const playAttempt = audio.play();
+    if (playAttempt) {
+      playAttempt.catch(() => {});
+    }
+  }, [phase]);
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
@@ -155,13 +205,38 @@ export function GameScene() {
         >
           <color attach="background" args={["#e9edf2"]} />
           <fog attach="fog" args={["#e9edf2", 25, 85]} />
-          <MouseLookControls enabled={phase === "playing"} />
+          <MouseLookControls
+            enabled={phase === "playing"}
+            pointerLock={!isTouchDevice}
+            lookDeltaRef={touchLookRef}
+          />
           <Suspense fallback={null}>
-            <GameContent />
+            <GameContent touchMoveRef={touchMoveRef} />
           </Suspense>
         </Canvas>
       </KeyboardControls>
-      <GameUI phase={phase} result={result} onStart={start} onRestart={restart} />
+      <GameUI phase={phase} result={result} level={level} onStart={start} onRestart={restart} />
+      <TouchControls enabled={phase === "playing" && isTouchDevice && isLandscape} moveRef={touchMoveRef} lookRef={touchLookRef} />
+      {isTouchDevice && !isLandscape && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            padding: "2rem",
+            zIndex: 200,
+          }}
+        >
+          <div style={{ maxWidth: "360px", fontSize: "1.1rem" }}>
+            Please rotate your device to landscape to play.
+          </div>
+        </div>
+      )}
     </div>
   );
 }

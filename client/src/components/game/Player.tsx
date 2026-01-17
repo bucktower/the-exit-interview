@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useKeyboardControls } from "@react-three/drei";
 import * as THREE from "three";
 import { createCoworkers, getCoworkerOffset } from "./coworkerUtils";
+import type { MutableRefObject } from "react";
 
 interface PlayerProps {
   position: [number, number, number];
@@ -14,6 +15,7 @@ interface PlayerProps {
   coworkerCount: number;
   coworkerSeed: number;
   level: number;
+  touchMoveRef?: MutableRefObject<THREE.Vector2>;
 }
 
 export enum Controls {
@@ -33,6 +35,7 @@ export function Player({
   coworkerCount,
   coworkerSeed,
   level,
+  touchMoveRef,
 }: PlayerProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const leftLaserRef = useRef<THREE.Mesh>(null);
@@ -162,6 +165,10 @@ export function Player({
     if (controls.back) direction.sub(forward);
     if (controls.left) direction.sub(right);
     if (controls.right) direction.add(right);
+    if (touchMoveRef?.current) {
+      direction.add(forward.clone().multiplyScalar(-touchMoveRef.current.y));
+      direction.add(right.clone().multiplyScalar(touchMoveRef.current.x));
+    }
 
     if (direction.length() > 0) {
       direction.normalize();

@@ -2,12 +2,19 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "@/lib/stores/useGame";
+import type { MutableRefObject } from "react";
 
 interface MouseLookControlsProps {
   enabled: boolean;
+  pointerLock?: boolean;
+  lookDeltaRef?: MutableRefObject<THREE.Vector2>;
 }
 
-export function MouseLookControls({ enabled }: MouseLookControlsProps) {
+export function MouseLookControls({
+  enabled,
+  pointerLock = true,
+  lookDeltaRef,
+}: MouseLookControlsProps) {
   const { camera, gl } = useThree();
   const difficulty = useGame((state) => state.difficulty);
   const isLockedRef = useRef(false);
@@ -24,6 +31,7 @@ export function MouseLookControls({ enabled }: MouseLookControlsProps) {
   }, [enabled, camera]);
 
   useEffect(() => {
+    if (!pointerLock) return;
     const element = gl.domElement;
 
     const onPointerLockChange = () => {
@@ -60,16 +68,21 @@ export function MouseLookControls({ enabled }: MouseLookControlsProps) {
       document.removeEventListener("pointerlockerror", onPointerLockError);
       document.removeEventListener("mousemove", onMouseMove);
     };
-  }, [enabled, gl.domElement]);
+  }, [enabled, gl.domElement, pointerLock]);
 
   useEffect(() => {
-    if (!enabled && document.pointerLockElement === gl.domElement) {
+    if (pointerLock && !enabled && document.pointerLockElement === gl.domElement) {
       document.exitPointerLock();
     }
-  }, [enabled, gl.domElement]);
+  }, [enabled, gl.domElement, pointerLock]);
 
   useFrame(() => {
     if (!enabled) return;
+    if (lookDeltaRef?.current) {
+      yawRef.current -= lookDeltaRef.current.x;
+      pitchRef.current -= lookDeltaRef.current.y;
+      lookDeltaRef.current.set(0, 0);
+    }
     const wobbleStrength = difficulty > 0 ? 0.02 * difficulty : 0;
     const wobbleSpeed = 0.8 * difficulty + 0.8;
     const time = performance.now() * 0.001;
