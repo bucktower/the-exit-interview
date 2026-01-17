@@ -13,6 +13,74 @@ interface MazeProps {
 
 const WALL_THICKNESS = 0.3;
 
+const baseLayout: WallData[] = [
+  { x: -10, z: -10, width: 8, depth: WALL_THICKNESS },
+  { x: -10, z: -10, width: WALL_THICKNESS, depth: 6 },
+  { x: -4, z: -12, width: WALL_THICKNESS, depth: 6 },
+  { x: -4, z: -6, width: 6, depth: WALL_THICKNESS },
+  { x: 4, z: -10, width: 8, depth: WALL_THICKNESS },
+  { x: 8, z: -7, width: WALL_THICKNESS, depth: 6 },
+  { x: 10, z: -2, width: 10, depth: WALL_THICKNESS },
+  { x: -8, z: -2, width: 10, depth: WALL_THICKNESS },
+  { x: -12, z: 2, width: WALL_THICKNESS, depth: 8 },
+  { x: -4, z: 2, width: WALL_THICKNESS, depth: 10 },
+  { x: 0, z: 6, width: 8, depth: WALL_THICKNESS },
+  { x: 6, z: 4, width: 8, depth: WALL_THICKNESS },
+  { x: 10, z: 7, width: WALL_THICKNESS, depth: 6 },
+  { x: -8, z: 10, width: 8, depth: WALL_THICKNESS },
+  { x: 4, z: 10, width: 6, depth: WALL_THICKNESS },
+  { x: 7, z: 12, width: WALL_THICKNESS, depth: 4 },
+];
+
+const levelExtras: WallData[][] = [
+  [],
+  [
+    { x: -2, z: -14, width: 6, depth: WALL_THICKNESS },
+    { x: 2, z: -8, width: WALL_THICKNESS, depth: 6 },
+    { x: 12, z: 2, width: WALL_THICKNESS, depth: 8 },
+  ],
+  [
+    { x: -14, z: -6, width: WALL_THICKNESS, depth: 8 },
+    { x: -2, z: 8, width: 6, depth: WALL_THICKNESS },
+    { x: 6, z: 12, width: 6, depth: WALL_THICKNESS },
+  ],
+  [
+    { x: -6, z: -2, width: 6, depth: WALL_THICKNESS },
+    { x: 2, z: 2, width: WALL_THICKNESS, depth: 8 },
+    { x: 12, z: -12, width: WALL_THICKNESS, depth: 6 },
+  ],
+  [
+    { x: -12, z: 12, width: 6, depth: WALL_THICKNESS },
+    { x: 0, z: -4, width: 8, depth: WALL_THICKNESS },
+    { x: 12, z: 8, width: 8, depth: WALL_THICKNESS },
+  ],
+  [
+    { x: -6, z: 6, width: WALL_THICKNESS, depth: 8 },
+    { x: 6, z: -6, width: WALL_THICKNESS, depth: 8 },
+    { x: -2, z: 12, width: 6, depth: WALL_THICKNESS },
+  ],
+  [
+    { x: -12, z: -12, width: 6, depth: WALL_THICKNESS },
+    { x: 0, z: 0, width: 8, depth: WALL_THICKNESS },
+    { x: 12, z: -4, width: 6, depth: WALL_THICKNESS },
+  ],
+  [
+    { x: -4, z: -4, width: WALL_THICKNESS, depth: 8 },
+    { x: 4, z: 8, width: WALL_THICKNESS, depth: 8 },
+    { x: -10, z: 4, width: 8, depth: WALL_THICKNESS },
+  ],
+  [
+    { x: -14, z: 0, width: WALL_THICKNESS, depth: 8 },
+    { x: 6, z: -12, width: 8, depth: WALL_THICKNESS },
+    { x: 8, z: 2, width: WALL_THICKNESS, depth: 8 },
+  ],
+  [
+    { x: -10, z: 14, width: 8, depth: WALL_THICKNESS },
+    { x: 0, z: -8, width: WALL_THICKNESS, depth: 8 },
+    { x: 10, z: -6, width: 6, depth: WALL_THICKNESS },
+  ],
+];
+
 function CubicleWall({ x, z, width, depth, height }: WallData) {
   const wallHeight = height ?? 2;
   
@@ -24,46 +92,9 @@ function CubicleWall({ x, z, width, depth, height }: WallData) {
   );
 }
 
-export function generateMazeWalls({ includeBorder = true } = {}): WallData[] {
-  const walls: WallData[] = [];
-  const addWall = (wall: WallData) => {
-    walls.push(wall);
-  };
-  
-  const borderHeight = 4;
-  if (includeBorder) {
-    addWall({ x: 0, z: -15, width: 30, depth: WALL_THICKNESS, height: borderHeight });
-    addWall({ x: 0, z: 15, width: 30, depth: WALL_THICKNESS, height: borderHeight });
-    addWall({ x: -15, z: 0, width: WALL_THICKNESS, depth: 30, height: borderHeight });
-    addWall({ x: 15, z: 0, width: WALL_THICKNESS, depth: 30, height: borderHeight });
-  }
-
-  addWall({ x: -10, z: -10, width: 8, depth: WALL_THICKNESS });
-  addWall({ x: -10, z: -10, width: WALL_THICKNESS, depth: 6 });
-  
-  addWall({ x: -4, z: -12, width: WALL_THICKNESS, depth: 6 });
-  addWall({ x: -4, z: -6, width: 6, depth: WALL_THICKNESS });
-  
-  addWall({ x: 4, z: -10, width: 8, depth: WALL_THICKNESS });
-  addWall({ x: 8, z: -7, width: WALL_THICKNESS, depth: 6 });
-  
-  addWall({ x: 10, z: -2, width: 10, depth: WALL_THICKNESS });
-  
-  addWall({ x: -8, z: -2, width: 10, depth: WALL_THICKNESS });
-  addWall({ x: -12, z: 2, width: WALL_THICKNESS, depth: 8 });
-  
-  addWall({ x: -4, z: 2, width: WALL_THICKNESS, depth: 10 });
-  addWall({ x: 0, z: 6, width: 8, depth: WALL_THICKNESS });
-  
-  addWall({ x: 6, z: 4, width: 8, depth: WALL_THICKNESS });
-  addWall({ x: 10, z: 7, width: WALL_THICKNESS, depth: 6 });
-  
-  addWall({ x: -8, z: 10, width: 8, depth: WALL_THICKNESS });
-  
-  addWall({ x: 4, z: 10, width: 6, depth: WALL_THICKNESS });
-  addWall({ x: 7, z: 12, width: WALL_THICKNESS, depth: 4 });
-
-  return walls;
+export function generateMazeLayout(level = 0): WallData[] {
+  const extras = levelExtras[level % levelExtras.length] ?? [];
+  return [...baseLayout, ...extras];
 }
 
 export function generateBorderWalls(size: number, height = 4): WallData[] {
@@ -74,6 +105,50 @@ export function generateBorderWalls(size: number, height = 4): WallData[] {
     { x: -half, z: 0, width: WALL_THICKNESS, depth: size, height },
     { x: half, z: 0, width: WALL_THICKNESS, depth: size, height },
   ];
+}
+
+export function generateBorderBlockers(
+  size: number,
+  spacing = 10,
+  blockerLength = 4
+): WallData[] {
+  const half = size / 2;
+  const walls: WallData[] = [];
+  const start = -half + spacing;
+  const end = half - spacing;
+  const inwardOffset = blockerLength / 2 + WALL_THICKNESS;
+
+  for (let x = start; x <= end; x += spacing) {
+    walls.push({
+      x,
+      z: -half + inwardOffset,
+      width: WALL_THICKNESS,
+      depth: blockerLength,
+    });
+    walls.push({
+      x,
+      z: half - inwardOffset,
+      width: WALL_THICKNESS,
+      depth: blockerLength,
+    });
+  }
+
+  for (let z = start; z <= end; z += spacing) {
+    walls.push({
+      x: -half + inwardOffset,
+      z,
+      width: blockerLength,
+      depth: WALL_THICKNESS,
+    });
+    walls.push({
+      x: half - inwardOffset,
+      z,
+      width: blockerLength,
+      depth: WALL_THICKNESS,
+    });
+  }
+
+  return walls;
 }
 
 export function Maze({ walls }: MazeProps) {

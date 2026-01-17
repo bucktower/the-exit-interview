@@ -2,7 +2,7 @@ import { Suspense, useMemo, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
 import { KeyboardControls } from "@react-three/drei";
 import { Player, Controls } from "./Player";
-import { Maze, generateMazeWalls, generateBorderWalls } from "./Maze";
+import { Maze, generateMazeLayout, generateBorderWalls, generateBorderBlockers } from "./Maze";
 import { Floor } from "./Floor";
 import { ExitDoor } from "./ExitDoor";
 import { OfficeDecorations } from "./OfficeDecorations";
@@ -40,14 +40,18 @@ function Lights() {
 }
 
 function GameContent() {
-  const { phase, end } = useGame();
+  const { phase, end, level, advanceLevel } = useGame();
+  const difficulty = useGame((state) => state.difficulty);
   const TILE_SIZE = 30;
   const TILE_COUNT = 2;
   const floorSize = TILE_SIZE * TILE_COUNT;
+  const coworkerBounds = floorSize / 2 - 4;
+  const coworkerCount = Math.min(32, 20 * Math.pow(2, difficulty));
+  const coworkerSeed = 100 + level;
   const halfTile = TILE_SIZE / 2;
   const offsets = useMemo(() => [-halfTile, halfTile], [halfTile]);
   const walls = useMemo(() => {
-    const baseWalls = generateMazeWalls({ includeBorder: false });
+    const baseWalls = generateMazeLayout(level);
     const tiledWalls = offsets.flatMap((offsetX) =>
       offsets.flatMap((offsetZ) =>
         baseWalls.map((wall) => ({
@@ -57,8 +61,12 @@ function GameContent() {
         }))
       )
     );
-    return [...tiledWalls, ...generateBorderWalls(floorSize, 4)];
-  }, [floorSize, offsets]);
+    return [
+      ...tiledWalls,
+      ...generateBorderWalls(floorSize, 4),
+      ...generateBorderBlockers(floorSize, 10, 5),
+    ];
+  }, [floorSize, offsets, level]);
   
   const cornerOffset = floorSize / 2 - 4;
   const playerStart: [number, number, number] = [-cornerOffset, 0.6, -cornerOffset];
@@ -69,12 +77,22 @@ function GameContent() {
       [-cornerOffset, 0, cornerOffset],
     ];
     return corners[Math.floor(Math.random() * corners.length)];
-  }, [phase]);
+  }, [phase, level]);
 
   const handleReachExit = useCallback(() => {
     if (phase === "playing") {
-      console.log("Player reached exit!");
-      end();
+      if (level >= 8) {
+        console.log("Player reached exit!");
+        end("win");
+      } else {
+        advanceLevel();
+      }
+    }
+  }, [phase, end, level, advanceLevel]);
+
+  const handleHitCoworker = useCallback(() => {
+    if (phase === "playing") {
+      end("lose");
     }
   }, [phase, end]);
 
@@ -86,7 +104,7 @@ function GameContent() {
         <Maze walls={walls} />
         <ExitDoor position={exitPosition} />
         <OfficeDecorations />
-        <Coworkers />
+        <Coworkers bounds={coworkerBounds} count={coworkerCount} seed={coworkerSeed} />
         <Ceiling size={floorSize} />
       </>
     );
@@ -98,27 +116,35 @@ function GameContent() {
       <Floor size={floorSize} />
       <Maze walls={walls} />
       <Player
+        key={`player-${level}`}
         position={playerStart}
         walls={walls}
         onReachExit={handleReachExit}
+        onHitCoworker={handleHitCoworker}
         exitPosition={exitPosition}
+        coworkerBounds={coworkerBounds}
+        coworkerCount={coworkerCount}
+        coworkerSeed={coworkerSeed}
+        level={level}
       />
       <ExitDoor position={exitPosition} />
       <OfficeDecorations />
-      <Coworkers />
+      <Coworkers bounds={coworkerBounds} count={coworkerCount} seed={coworkerSeed} />
       <Ceiling size={floorSize} />
     </>
   );
 }
 
 export function GameScene() {
-  const { phase, start, restart } = useGame();
+  const { phase, result, difficulty, start, restart } = useGame();
+  const blurPx = Math.min(difficulty, 8) * 0.8;
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
       <KeyboardControls map={keyMap}>
         <Canvas
           shadows
+          style={{ filter: blurPx > 0 ? `blur(${blurPx}px)` : "none" }}
           camera={{
             position: [-12, 1.6, -12],
             fov: 60,
@@ -135,7 +161,7 @@ export function GameScene() {
           </Suspense>
         </Canvas>
       </KeyboardControls>
-      <GameUI phase={phase} onStart={start} onRestart={restart} />
+      <GameUI phase={phase} result={result} onStart={start} onRestart={restart} />
     </div>
   );
 }

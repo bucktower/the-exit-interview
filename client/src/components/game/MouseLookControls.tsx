@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { useGame } from "@/lib/stores/useGame";
 
 interface MouseLookControlsProps {
   enabled: boolean;
@@ -8,6 +9,7 @@ interface MouseLookControlsProps {
 
 export function MouseLookControls({ enabled }: MouseLookControlsProps) {
   const { camera, gl } = useThree();
+  const difficulty = useGame((state) => state.difficulty);
   const isLockedRef = useRef(false);
   const yawRef = useRef(0);
   const pitchRef = useRef(0);
@@ -68,7 +70,17 @@ export function MouseLookControls({ enabled }: MouseLookControlsProps) {
 
   useFrame(() => {
     if (!enabled) return;
-    eulerRef.current.set(pitchRef.current, yawRef.current, 0);
+    const wobbleStrength = difficulty > 0 ? 0.02 * difficulty : 0;
+    const wobbleSpeed = 0.8 * difficulty + 0.8;
+    const time = performance.now() * 0.001;
+    const wobblePitch = Math.sin(time * wobbleSpeed) * wobbleStrength;
+    const wobbleYaw = Math.sin(time * wobbleSpeed * 0.7) * wobbleStrength * 0.6;
+    const wobbleRoll = Math.cos(time * wobbleSpeed * 1.3) * wobbleStrength * 0.8;
+    eulerRef.current.set(
+      pitchRef.current + wobblePitch,
+      yawRef.current + wobbleYaw,
+      wobbleRoll
+    );
     camera.quaternion.setFromEuler(eulerRef.current);
   });
 
